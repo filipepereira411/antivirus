@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Mini Antivírus Web</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #121212; color: #00ffcc; padding: 20px; }
+        .container { max-width: 600px; margin: auto; background: #1e1e1e; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,255,204,0.2); }
+        input[type="file"] { margin: 15px 0; color: #fff; }
+        button { background: #00ffcc; color: #121212; border: none; padding: 10px 20px; cursor: pointer; font-weight: bold; border-radius: 4px; }
+        button:hover { background: #00ccb8; }
+        #resultado { margin-top: 20px; white-space: pre-wrap; background: #121212; padding: 15px; border: 1px solid #333; border-radius: 4px; font-family: monospace; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Simulador de Antivírus Web</h2>
+        <p>Selecione um arquivo local para calcular o hash SHA-256 e compará-lo com a base de dados.</p>
+        <input type="file" id="arquivoInput">
+        <br>
+        <button onclick="escanearArquivo()">Escanear Arquivo</button>
+        <div id="resultado">Aguardando arquivo...</div>
+    </div>
+
+    <script>
+        const bancoAssinaturas = {
+            "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855": "Arquivo Vazio (Exemplo Seguro)",
+            "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824": "Exemplo de Assinatura Maliciosa"
+        };
+
+        async function calcularSHA256(file) {
+            const buffer = await file.arrayBuffer();
+            const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        async function escanearArquivo() {
+            const input = document.getElementById('arquivoInput');
+            const resultado = document.getElementById('resultado');
+            
+            if (input.files.length === 0) {
+                resultado.textContent = "Por favor, selecione um arquivo primeiro.";
+                return;
+            }
+
+            const file = input.files[0];
+            resultado.textContent = "Calculando hash SHA-256 do arquivo...";
+            
+            try {
+                const hash = await calcularSHA256(file);
+                let msg = `Nome: ${file.name}\nTamanho: ${file.size} bytes\nHash: ${hash}\n\n`;
+                
+                if (bancoAssinaturas[hash]) {
+                    msg += `[ALERTA VERMELHO] Ameaça detectada: ${bancoAssinaturas[hash]}`;
+                } else {
+                    msg += `[STATUS: LIMPO] Nenhuma assinatura correspondente encontrada.`;
+                }
+                resultado.textContent = msg;
+            } catch (error) {
+                resultado.textContent = `Erro ao processar o arquivo: ${error.message}`;
+            }
+        }
+    </script>
+</body>
+</html>
+
